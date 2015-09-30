@@ -12,10 +12,25 @@ var camera = new THREE.PerspectiveCamera(60, canvas.width() / canvas.height(), 1
 camera.position.set(0, 0, 100);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 var renderer = new THREE.WebGLRenderer({
-    canvas: canvas[0]
+    canvas: canvas[0],
+    preserveDrawingBuffer: true,
+    alpha: true
 });
-var Words = new ((function () {
+renderer.autoClearColor = false;
+var BackgroundOpacity = new ((function () {
     function class_1() {
+        this.blackBackground = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, 10000), new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 1, transparent: true }));
+        this.blackBackground.position.z = -5000;
+        this.blackBackground.rotation.z = Math.PI / 2;
+        scene.add(this.blackBackground);
+    }
+    class_1.prototype.param = function (v) {
+        this.blackBackground.material.opacity = Math.pow(v / 127, 4);
+    };
+    return class_1;
+})());
+var Words = new ((function () {
+    function class_2() {
         this.words = [
             "abstract not concrete",
             "aesthetic having with the appreciation beauty",
@@ -74,16 +89,16 @@ var Words = new ((function () {
             "line-height": $("body").height() + "px"
         });
     }
-    class_1.prototype.show = function () {
+    class_2.prototype.show = function () {
         this.div.prependTo("body");
     };
-    class_1.prototype.hide = function () {
+    class_2.prototype.hide = function () {
         this.div.detach();
     };
-    class_1.prototype.param = function (value) {
+    class_2.prototype.param = function (value) {
         this.period = value / 127 * 2000 + 200;
     };
-    class_1.prototype.animate = function () {
+    class_2.prototype.animate = function () {
         var showDuration = 200;
         if (Date.now() % this.period < 16) {
             var wordList = this.words[Math.floor(this.words.length * Math.random())];
@@ -95,7 +110,7 @@ var Words = new ((function () {
             this.div.text("");
         }
     };
-    return class_1;
+    return class_2;
 })());
 function tween(v, to, millis, then) {
     var start = v.clone();
@@ -121,7 +136,7 @@ function tween(v, to, millis, then) {
     requestAnimationFrame(update);
 }
 var PlanetEarth = new ((function () {
-    function class_2() {
+    function class_3() {
         var _this = this;
         this.video = $("<video autoplay src='planetearth.mp4'></video>")[0];
         this.video.volume = 0;
@@ -131,30 +146,30 @@ var PlanetEarth = new ((function () {
             _this.mesh = new THREE.Mesh(new THREE.SphereGeometry(50, 12, 12), new THREE.MeshBasicMaterial({ map: _this.texture }));
         };
     }
-    class_2.prototype.param = function (value) {
+    class_3.prototype.param = function (value) {
         this.video.playbackRate = Math.pow(5, 2 * (value / 127 - 0.5));
     };
-    class_2.prototype.show = function () {
+    class_3.prototype.show = function () {
         scene.add(this.mesh);
         this.mesh.scale.set(0, 0, 0);
         tween(this.mesh.scale, new THREE.Vector3(1, 1, 1), 300);
     };
-    class_2.prototype.hide = function () {
+    class_3.prototype.hide = function () {
         var _this = this;
         tween(this.mesh.scale, new THREE.Vector3(0, 0, 0), 100, function () {
             scene.remove(_this.mesh);
         });
     };
-    class_2.prototype.animate = function () {
+    class_3.prototype.animate = function () {
         if (this.texture && this.mesh) {
             this.mesh.rotation.y += 0.002 * this.video.playbackRate;
             this.texture.needsUpdate = true;
         }
     };
-    return class_2;
+    return class_3;
 })());
 var Rocks = new ((function () {
-    function class_3() {
+    function class_4() {
         this.object = new THREE.Object3D();
         this.speed = 0.02;
         var geometry = new THREE.CubeGeometry(15, 15, 15);
@@ -166,21 +181,21 @@ var Rocks = new ((function () {
             this.object.add(rock);
         }
     }
-    class_3.prototype.param = function (value) {
+    class_4.prototype.param = function (value) {
         this.speed = Math.pow(value / 127, 2) * 0.5;
     };
-    class_3.prototype.show = function () {
+    class_4.prototype.show = function () {
         scene.add(this.object);
         this.object.scale.set(0, 0, 0);
         tween(this.object.scale, new THREE.Vector3(1, 1, 1), 1000);
     };
-    class_3.prototype.hide = function () {
+    class_4.prototype.hide = function () {
         var _this = this;
         tween(this.object.scale, new THREE.Vector3(0, 0, 0), 300, function () {
             scene.remove(_this.object);
         });
     };
-    class_3.prototype.animate = function () {
+    class_4.prototype.animate = function () {
         var _this = this;
         this.object.children.forEach(function (rock) {
             var worldPos = rock.getWorldPosition();
@@ -191,28 +206,28 @@ var Rocks = new ((function () {
         });
         this.object.rotateX(this.speed);
     };
-    return class_3;
+    return class_4;
 })());
 var IncomingGrid = new ((function () {
-    function class_4() {
+    function class_5() {
         this.gridHelper = new THREE.GridHelper(3000, 15);
         this.gridHelper.rotateX(Math.PI / 2);
     }
-    class_4.prototype.param = function (value) {
+    class_5.prototype.param = function (value) {
         this.gridHelper.rotation.z = value / 127 - 0.5;
     };
-    class_4.prototype.show = function () {
+    class_5.prototype.show = function () {
         scene.add(this.gridHelper);
     };
-    class_4.prototype.hide = function () {
+    class_5.prototype.hide = function () {
         scene.remove(this.gridHelper);
     };
-    class_4.prototype.animate = function () {
+    class_5.prototype.animate = function () {
         var scale = 1 + 0.1 * Math.pow(Math.sin(Date.now() / 600), 320);
         this.gridHelper.scale.set(scale, scale, scale);
         this.gridHelper.position.z = (2 * Math.sin(Date.now() / 4000) - 1) * 10 - 400;
     };
-    return class_4;
+    return class_5;
 })());
 var noteStates = {};
 socket.on("message", function (message) {
@@ -227,7 +242,8 @@ socket.on("message", function (message) {
         "/cc/41": PlanetEarth,
         "/cc/42": Words,
         "/cc/43": Rocks,
-        "/cc/44": IncomingGrid
+        "/cc/44": IncomingGrid,
+        "/cc/21": BackgroundOpacity
     };
     var toggledAnimatable = ON_OFF_MAPPING[message.name];
     var parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
@@ -249,6 +265,9 @@ var animatables = [
     Words,
     Rocks,
     IncomingGrid
+];
+var effects = [
+    BackgroundOpacity
 ];
 function animate() {
     animatables.forEach(function (animatable) {

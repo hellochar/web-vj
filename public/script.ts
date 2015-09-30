@@ -14,18 +14,43 @@ const camera = new THREE.PerspectiveCamera(60, canvas.width() / canvas.height(),
 camera.position.set(0, 0, 100);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 const renderer = new THREE.WebGLRenderer({
-    canvas: <HTMLCanvasElement> canvas[0]
+    canvas: <HTMLCanvasElement> canvas[0],
+    preserveDrawingBuffer: true,
+    alpha: true
 });
+renderer.autoClearColor = false;
 
-interface Animatable {
+interface Parameterizable {
+    param(value: number): void;
+}
+
+interface Animatable extends Parameterizable {
     animate(): void;
 
     show(): void;
 
     hide(): void;
-
-    param(value: number): void;
 }
+
+interface Effect extends Parameterizable {
+}
+
+const BackgroundOpacity: Effect = new (class {
+    public blackBackground = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(10000, 10000),
+        new THREE.MeshBasicMaterial({color: 0x000000, opacity: 1, transparent: true})
+    );
+
+    constructor() {
+        this.blackBackground.position.z = -5000;
+        this.blackBackground.rotation.z = Math.PI / 2;
+        scene.add(this.blackBackground);
+    }
+
+    param(v: number) {
+        this.blackBackground.material.opacity = Math.pow(v / 127, 4);
+    }
+});
 
 const Words: Animatable = new (class {
     public words = [
@@ -272,11 +297,13 @@ socket.on("message", (message: IMessage) => {
         "/note/11": Rocks,
         "/note/12": IncomingGrid
     };
-    const PARAMETER_MAPPING: {[name: string]: Animatable} = {
+    const PARAMETER_MAPPING: {[name: string]: Parameterizable} = {
         "/cc/41": PlanetEarth,
         "/cc/42": Words,
         "/cc/43": Rocks,
-        "/cc/44": IncomingGrid
+        "/cc/44": IncomingGrid,
+
+        "/cc/21": BackgroundOpacity
     };
     const toggledAnimatable = ON_OFF_MAPPING[message.name];
     const parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
@@ -298,6 +325,10 @@ const animatables = [
     Rocks,
     IncomingGrid
 ];
+
+const effects = [
+    BackgroundOpacity
+]
 
 function animate() {
     animatables.forEach((animatable) => {
