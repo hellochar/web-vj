@@ -19,6 +19,12 @@ const renderer = new THREE.WebGLRenderer({
 
 interface Animatable {
     animate(): void;
+
+    show(): void;
+
+    hide(): void;
+
+    param(value: number): void;
 }
 
 const Words: Animatable = new (class {
@@ -75,24 +81,37 @@ const Words: Animatable = new (class {
         "vindicated freed from blame"
     ];
 
-    public div = $("<div></div>").addClass("words").prependTo("body");
+    public div = $("<div></div>").addClass("words");
+
+    public period: number = 1000;
 
     constructor() {
         this.div.css({
-            "line-height": $("body").width() + "px"
+            "line-height": $("body").height() + "px"
         });
     }
 
+    public show() {
+        this.div.prependTo("body");
+    }
+
+    public hide() {
+        this.div.detach();
+    }
+
+    public param(value: number) {
+        this.period = value / 127 * 2000 + 200;
+    }
+
     public animate() {
-        const period = 1000;
         const showDuration = 200;
 
-        if (Date.now() % period < 16) {
+        if (Date.now() % this.period < 16) {
             const wordList = this.words[Math.floor(this.words.length * Math.random())];
             const wordList2 = wordList.split(" ");
             const word = wordList2[Math.floor(wordList2.length * Math.random())];
             this.div.text(word);
-        } else if (Date.now() % period > showDuration) {
+        } else if (Date.now() % this.period > showDuration) {
             this.div.text("");
         }
     }
@@ -113,17 +132,97 @@ const PlanetEarth: Animatable = new (class {
                 new THREE.SphereGeometry(50, 12, 12),
                 new THREE.MeshBasicMaterial({map: this.texture})
             );
-            scene.add( this.mesh );
         };
+    }
+
+    public param(value: number) {
+        this.video.playbackRate = Math.pow(5, 2*(value / 127 - 0.5));
+    }
+
+    public show() {
+        scene.add(this.mesh);
+    }
+
+    public hide() {
+        scene.remove(this.mesh);
     }
 
     public animate() {
         if (this.texture && this.mesh) {
-            this.mesh.rotation.y += 0.002;
+            this.mesh.rotation.y += 0.002 * this.video.playbackRate;
             this.texture.needsUpdate = true;
         }
 
     }
+});
+
+const Rocks: Animatable = new (class {
+    public object = new THREE.Object3D();
+
+    public speed: number = 0.02;
+
+    constructor() {
+        const geometry = new THREE.CubeGeometry(15, 15, 15);
+        const material = new THREE.MeshNormalMaterial({ });
+        for(let i = 0; i < 200; i++) {
+            const rock = new THREE.Mesh(geometry, material);
+            const variation = 500;
+            rock.position.set(variation * (Math.random() - 0.5),
+                              variation * (Math.random() - 0.5),
+                              variation * (Math.random() - 0.5));
+            this.object.add(rock);
+        }
+    }
+
+    param(value: number) {
+        this.speed = value / 127 * 0.5;
+    }
+
+    show() {
+        scene.add(this.object);
+    }
+
+    hide() {
+        scene.remove(this.object);
+    }
+
+    animate() {
+        this.object.children.forEach((rock) => {
+            const worldPos = rock.getWorldPosition();
+            rock.rotation.x += worldPos.x / 1000 * this.speed * 20;
+            rock.rotation.y += worldPos.y / 1000 * this.speed * 20;
+            rock.rotation.z += 0.001 / Math.max(worldPos.z, 0.01) * this.speed * 20;
+            rock.position.x += 0.5 * Math.cos(Date.now() / 1000);
+        });
+        this.object.rotateX(this.speed);
+    }
+});
+
+const IncomingGrid: Animatable = new (class {
+    public gridHelper = new THREE.GridHelper(3000, 15);
+
+    constructor() {
+        this.gridHelper.rotateX(Math.PI / 2);
+    }
+
+    param(value: number) {
+        this.gridHelper.rotation.z = value / 127 - 0.5;
+    }
+
+    show() {
+        scene.add(this.gridHelper);
+    }
+
+    hide() {
+        scene.remove(this.gridHelper);
+    }
+
+    public animate() {
+        const scale = 1 + 0.1 * Math.pow(Math.sin(Date.now() / 600), 320);
+        this.gridHelper.scale.set(scale, scale, scale);
+        this.gridHelper.position.z = (2*Math.sin(Date.now() / 4000) - 1) * 10 - 400;
+    }
+
 });
 
 
@@ -133,14 +232,40 @@ interface IMessage {
 }
 
 socket.on("message", (message: IMessage) => {
-    if (message.name == "/note/9" && message.value == 127) {
+    console.log(message);
+    const ON_OFF_MAPPING: {[name: string]: Animatable} = {
+        "/note/9": PlanetEarth,
+        "/note/10": Words,
+        "/note/11": Rocks,
+        "/note/12": IncomingGrid
+    };
+    const PARAMETER_MAPPING: {[name: string]: Animatable} = {
+        "/cc/41": PlanetEarth,
+        "/cc/42": Words,
+        "/cc/43": Rocks,
+        "/cc/44": IncomingGrid
+    };
+    const toggledAnimatable = ON_OFF_MAPPING[message.name];
+    const parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
+    if (toggledAnimatable) {
+        if (message.value == 127) {
+            toggledAnimatable.show();
+        } else {
+            toggledAnimatable.hide();
+        }
+    } else if (parameterChangedAnimatable) {
+        parameterChangedAnimatable.param(message.value);
     }
 });
 
 const animatables = [
     PlanetEarth,
-    Words
+    Words,
+    Rocks,
+    IncomingGrid
 ];
+
+animatables.forEach((a) => a.show());
 
 function animate() {
     animatables.forEach((animatable) => {

@@ -68,21 +68,30 @@ var Words = new ((function () {
             "transitory short-lived temporary",
             "vindicated freed from blame"
         ];
-        this.div = $("<div></div>").addClass("words").prependTo("body");
+        this.div = $("<div></div>").addClass("words");
+        this.period = 1000;
         this.div.css({
-            "line-height": $("body").width() + "px"
+            "line-height": $("body").height() + "px"
         });
     }
+    class_1.prototype.show = function () {
+        this.div.prependTo("body");
+    };
+    class_1.prototype.hide = function () {
+        this.div.detach();
+    };
+    class_1.prototype.param = function (value) {
+        this.period = value / 127 * 2000 + 200;
+    };
     class_1.prototype.animate = function () {
-        var period = 1000;
         var showDuration = 200;
-        if (Date.now() % period < 16) {
+        if (Date.now() % this.period < 16) {
             var wordList = this.words[Math.floor(this.words.length * Math.random())];
             var wordList2 = wordList.split(" ");
             var word = wordList2[Math.floor(wordList2.length * Math.random())];
             this.div.text(word);
         }
-        else if (Date.now() % period > showDuration) {
+        else if (Date.now() % this.period > showDuration) {
             this.div.text("");
         }
     };
@@ -97,25 +106,116 @@ var PlanetEarth = new ((function () {
             _this.video.currentTime = 3 * 60 + 43;
             _this.texture = new THREE.Texture(_this.video);
             _this.mesh = new THREE.Mesh(new THREE.SphereGeometry(50, 12, 12), new THREE.MeshBasicMaterial({ map: _this.texture }));
-            scene.add(_this.mesh);
         };
     }
+    class_2.prototype.param = function (value) {
+        this.video.playbackRate = Math.pow(5, 2 * (value / 127 - 0.5));
+    };
+    class_2.prototype.show = function () {
+        scene.add(this.mesh);
+    };
+    class_2.prototype.hide = function () {
+        scene.remove(this.mesh);
+    };
     class_2.prototype.animate = function () {
         if (this.texture && this.mesh) {
-            this.mesh.rotation.y += 0.002;
+            this.mesh.rotation.y += 0.002 * this.video.playbackRate;
             this.texture.needsUpdate = true;
         }
     };
     return class_2;
 })());
+var Rocks = new ((function () {
+    function class_3() {
+        this.object = new THREE.Object3D();
+        this.speed = 0.02;
+        var geometry = new THREE.CubeGeometry(15, 15, 15);
+        var material = new THREE.MeshNormalMaterial({});
+        for (var i = 0; i < 200; i++) {
+            var rock = new THREE.Mesh(geometry, material);
+            var variation = 500;
+            rock.position.set(variation * (Math.random() - 0.5), variation * (Math.random() - 0.5), variation * (Math.random() - 0.5));
+            this.object.add(rock);
+        }
+    }
+    class_3.prototype.param = function (value) {
+        this.speed = value / 127 * 0.5;
+    };
+    class_3.prototype.show = function () {
+        scene.add(this.object);
+    };
+    class_3.prototype.hide = function () {
+        scene.remove(this.object);
+    };
+    class_3.prototype.animate = function () {
+        var _this = this;
+        this.object.children.forEach(function (rock) {
+            var worldPos = rock.getWorldPosition();
+            rock.rotation.x += worldPos.x / 1000 * _this.speed * 20;
+            rock.rotation.y += worldPos.y / 1000 * _this.speed * 20;
+            rock.rotation.z += 0.001 / Math.max(worldPos.z, 0.01) * _this.speed * 20;
+            rock.position.x += 0.5 * Math.cos(Date.now() / 1000);
+        });
+        this.object.rotateX(this.speed);
+    };
+    return class_3;
+})());
+var IncomingGrid = new ((function () {
+    function class_4() {
+        this.gridHelper = new THREE.GridHelper(3000, 15);
+        this.gridHelper.rotateX(Math.PI / 2);
+    }
+    class_4.prototype.param = function (value) {
+        this.gridHelper.rotation.z = value / 127 - 0.5;
+    };
+    class_4.prototype.show = function () {
+        scene.add(this.gridHelper);
+    };
+    class_4.prototype.hide = function () {
+        scene.remove(this.gridHelper);
+    };
+    class_4.prototype.animate = function () {
+        var scale = 1 + 0.1 * Math.pow(Math.sin(Date.now() / 600), 320);
+        this.gridHelper.scale.set(scale, scale, scale);
+        this.gridHelper.position.z = (2 * Math.sin(Date.now() / 4000) - 1) * 10 - 400;
+    };
+    return class_4;
+})());
 socket.on("message", function (message) {
-    if (message.name == "/note/9" && message.value == 127) {
+    console.log(message);
+    var ON_OFF_MAPPING = {
+        "/note/9": PlanetEarth,
+        "/note/10": Words,
+        "/note/11": Rocks,
+        "/note/12": IncomingGrid
+    };
+    var PARAMETER_MAPPING = {
+        "/cc/41": PlanetEarth,
+        "/cc/42": Words,
+        "/cc/43": Rocks,
+        "/cc/44": IncomingGrid
+    };
+    var toggledAnimatable = ON_OFF_MAPPING[message.name];
+    var parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
+    if (toggledAnimatable) {
+        if (message.value == 127) {
+            toggledAnimatable.show();
+        }
+        else {
+            toggledAnimatable.hide();
+        }
+    }
+    else if (parameterChangedAnimatable) {
+        parameterChangedAnimatable.param(message.value);
     }
 });
 var animatables = [
     PlanetEarth,
-    Words
+    Words,
+    Rocks,
+    IncomingGrid
 ];
+animatables.forEach(function (a) { return a.show(); });
 function animate() {
     animatables.forEach(function (animatable) {
         animatable.animate();
