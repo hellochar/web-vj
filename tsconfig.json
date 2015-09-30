@@ -1,0 +1,29 @@
+{
+    "version": "1.5.0-beta",
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "isolatedModules": false,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "declaration": false,
+        "noImplicitAny": false,
+        "removeComments": true,
+        "noLib": false,
+        "preserveConstEnums": true,
+        "suppressImplicitAnyIndexErrors": true
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "./**/*.tsx",
+        "!./public/**/*",
+        "!./node_modules/**/*"
+    ],
+    "files": [
+        "./index.ts",
+        "./interfaces.d.ts",
+        "./typings/node/node.d.ts",
+        "./typings/socket.io/socket.io.d.ts",
+        "./typings/tsd.d.ts"
+    ]
+}
