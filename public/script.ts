@@ -117,6 +117,29 @@ const Words: Animatable = new (class {
     }
 });
 
+function tween(v: THREE.Vector3, to: THREE.Vector3, millis: number, then?: () => any) {
+    const start = v.clone();
+    let startTime: number;
+    function update(timestamp) {
+        if (!startTime) startTime = timestamp;
+        let timeDelta = timestamp - startTime;
+        if (timeDelta > startTime) timeDelta = millis;
+        const lerpedValue = Math.pow(timeDelta / millis, 1/4);
+
+        v.copy(start);
+        v.lerp(to, lerpedValue);
+
+        if (timeDelta < millis) {
+            requestAnimationFrame(update);
+        } else {
+            if (then) {
+                then();
+            }
+        }
+    }
+    requestAnimationFrame(update);
+}
+
 const PlanetEarth: Animatable = new (class {
 
     public video = <HTMLVideoElement> $("<video autoplay src='planetearth.mp4'></video>")[0];
@@ -141,10 +164,14 @@ const PlanetEarth: Animatable = new (class {
 
     public show() {
         scene.add(this.mesh);
+        this.mesh.scale.set(0,0,0);
+        tween(this.mesh.scale, new THREE.Vector3(1, 1, 1), 300);
     }
 
     public hide() {
-        scene.remove(this.mesh);
+        tween(this.mesh.scale, new THREE.Vector3(0, 0, 0), 100, () => {
+            scene.remove(this.mesh);
+        });
     }
 
     public animate() {
@@ -175,15 +202,19 @@ const Rocks: Animatable = new (class {
     }
 
     param(value: number) {
-        this.speed = value / 127 * 0.5;
+        this.speed = Math.pow(value / 127, 2) * 0.5;
     }
 
     show() {
         scene.add(this.object);
+        this.object.scale.set(0,0,0);
+        tween(this.object.scale, new THREE.Vector3(1, 1, 1), 1000);
     }
 
     hide() {
-        scene.remove(this.object);
+        tween(this.object.scale, new THREE.Vector3(0, 0, 0), 300, () => {
+            scene.remove(this.object);
+        });
     }
 
     animate() {
@@ -192,7 +223,7 @@ const Rocks: Animatable = new (class {
             rock.rotation.x += worldPos.x / 1000 * this.speed * 20;
             rock.rotation.y += worldPos.y / 1000 * this.speed * 20;
             rock.rotation.z += 0.001 / Math.max(worldPos.z, 0.01) * this.speed * 20;
-            rock.position.x += 0.5 * Math.cos(Date.now() / 1000);
+            rock.position.x += 0.5 * this.speed * 20 * Math.cos(Date.now() / 1000);
         });
         this.object.rotateX(this.speed);
     }
@@ -231,6 +262,8 @@ interface IMessage {
     value: number;
 }
 
+const noteStates: {[name:string]: boolean} = {};
+
 socket.on("message", (message: IMessage) => {
     console.log(message);
     const ON_OFF_MAPPING: {[name: string]: Animatable} = {
@@ -247,8 +280,9 @@ socket.on("message", (message: IMessage) => {
     };
     const toggledAnimatable = ON_OFF_MAPPING[message.name];
     const parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
-    if (toggledAnimatable) {
-        if (message.value == 127) {
+    if (toggledAnimatable && message.value == 127) {
+        noteStates[message.name] = !noteStates[message.name];
+        if (noteStates[message.name]) {
             toggledAnimatable.show();
         } else {
             toggledAnimatable.hide();
@@ -264,8 +298,6 @@ const animatables = [
     Rocks,
     IncomingGrid
 ];
-
-animatables.forEach((a) => a.show());
 
 function animate() {
     animatables.forEach((animatable) => {

@@ -97,6 +97,29 @@ var Words = new ((function () {
     };
     return class_1;
 })());
+function tween(v, to, millis, then) {
+    var start = v.clone();
+    var startTime;
+    function update(timestamp) {
+        if (!startTime)
+            startTime = timestamp;
+        var timeDelta = timestamp - startTime;
+        if (timeDelta > startTime)
+            timeDelta = millis;
+        var lerpedValue = Math.pow(timeDelta / millis, 1 / 4);
+        v.copy(start);
+        v.lerp(to, lerpedValue);
+        if (timeDelta < millis) {
+            requestAnimationFrame(update);
+        }
+        else {
+            if (then) {
+                then();
+            }
+        }
+    }
+    requestAnimationFrame(update);
+}
 var PlanetEarth = new ((function () {
     function class_2() {
         var _this = this;
@@ -113,9 +136,14 @@ var PlanetEarth = new ((function () {
     };
     class_2.prototype.show = function () {
         scene.add(this.mesh);
+        this.mesh.scale.set(0, 0, 0);
+        tween(this.mesh.scale, new THREE.Vector3(1, 1, 1), 300);
     };
     class_2.prototype.hide = function () {
-        scene.remove(this.mesh);
+        var _this = this;
+        tween(this.mesh.scale, new THREE.Vector3(0, 0, 0), 100, function () {
+            scene.remove(_this.mesh);
+        });
     };
     class_2.prototype.animate = function () {
         if (this.texture && this.mesh) {
@@ -139,13 +167,18 @@ var Rocks = new ((function () {
         }
     }
     class_3.prototype.param = function (value) {
-        this.speed = value / 127 * 0.5;
+        this.speed = Math.pow(value / 127, 2) * 0.5;
     };
     class_3.prototype.show = function () {
         scene.add(this.object);
+        this.object.scale.set(0, 0, 0);
+        tween(this.object.scale, new THREE.Vector3(1, 1, 1), 1000);
     };
     class_3.prototype.hide = function () {
-        scene.remove(this.object);
+        var _this = this;
+        tween(this.object.scale, new THREE.Vector3(0, 0, 0), 300, function () {
+            scene.remove(_this.object);
+        });
     };
     class_3.prototype.animate = function () {
         var _this = this;
@@ -154,7 +187,7 @@ var Rocks = new ((function () {
             rock.rotation.x += worldPos.x / 1000 * _this.speed * 20;
             rock.rotation.y += worldPos.y / 1000 * _this.speed * 20;
             rock.rotation.z += 0.001 / Math.max(worldPos.z, 0.01) * _this.speed * 20;
-            rock.position.x += 0.5 * Math.cos(Date.now() / 1000);
+            rock.position.x += 0.5 * _this.speed * 20 * Math.cos(Date.now() / 1000);
         });
         this.object.rotateX(this.speed);
     };
@@ -181,6 +214,7 @@ var IncomingGrid = new ((function () {
     };
     return class_4;
 })());
+var noteStates = {};
 socket.on("message", function (message) {
     console.log(message);
     var ON_OFF_MAPPING = {
@@ -197,8 +231,9 @@ socket.on("message", function (message) {
     };
     var toggledAnimatable = ON_OFF_MAPPING[message.name];
     var parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
-    if (toggledAnimatable) {
-        if (message.value == 127) {
+    if (toggledAnimatable && message.value == 127) {
+        noteStates[message.name] = !noteStates[message.name];
+        if (noteStates[message.name]) {
             toggledAnimatable.show();
         }
         else {
@@ -215,7 +250,6 @@ var animatables = [
     Rocks,
     IncomingGrid
 ];
-animatables.forEach(function (a) { return a.show(); });
 function animate() {
     animatables.forEach(function (animatable) {
         animatable.animate();
