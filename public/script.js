@@ -17,6 +17,21 @@ var renderer = new THREE.WebGLRenderer({
     alpha: true
 });
 renderer.autoClearColor = false;
+var composer = new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene, camera));
+var effect = new THREE.ShaderPass(THREE.DotScreenShader);
+effect.uniforms['scale'].value = 4;
+composer.addPass(effect);
+var effect2 = new THREE.ShaderPass(THREE.RGBShiftShader);
+effect2.uniforms['amount'].value = 0.0015;
+effect2.renderToScreen = true;
+composer.addPass(effect2);
+window.addEventListener('resize', onWindowResize, false);
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 var BackgroundOpacity = new ((function () {
     function class_1() {
         this.blackBackground = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, 10000), new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 1, transparent: true }));
@@ -269,11 +284,19 @@ var animatables = [
 var effects = [
     BackgroundOpacity
 ];
+animatables.forEach(function (a) {
+    try {
+        a.show();
+    }
+    catch (e) {
+        console.error(e);
+    }
+});
 function animate() {
     animatables.forEach(function (animatable) {
         animatable.animate();
     });
-    renderer.render(scene, camera);
+    composer.render();
     requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
