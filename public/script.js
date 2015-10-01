@@ -19,13 +19,12 @@ var renderer = new THREE.WebGLRenderer({
 renderer.autoClearColor = false;
 var composer = new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene, camera));
-var effect = new THREE.ShaderPass(THREE.DotScreenShader);
-effect.uniforms['scale'].value = 4;
-composer.addPass(effect);
-var effect2 = new THREE.ShaderPass(THREE.RGBShiftShader);
-effect2.uniforms['amount'].value = 0.0015;
-effect2.renderToScreen = true;
-composer.addPass(effect2);
+var dotScreenEffect = new THREE.ShaderPass(THREE.DotScreenShader);
+dotScreenEffect.uniforms['scale'].value = 4;
+composer.addPass(dotScreenEffect);
+var rgbShiftEffect = new THREE.ShaderPass(THREE.RGBShiftShader);
+rgbShiftEffect.uniforms['amount'].value = 0.0015;
+composer.addPass(rgbShiftEffect);
 window.addEventListener('resize', onWindowResize, false);
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -35,7 +34,7 @@ function onWindowResize() {
 var BackgroundOpacity = new ((function () {
     function class_1() {
         this.blackBackground = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, 10000), new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 1, transparent: true }));
-        this.blackBackground.position.z = -5000;
+        this.blackBackground.position.z = -3000;
         this.blackBackground.rotation.z = Math.PI / 2;
         scene.add(this.blackBackground);
     }
@@ -258,7 +257,29 @@ socket.on("message", function (message) {
         "/cc/42": Words,
         "/cc/43": Rocks,
         "/cc/44": IncomingGrid,
-        "/cc/21": BackgroundOpacity
+        "/cc/21": BackgroundOpacity,
+        "/cc/22": {
+            param: function (v) {
+                if (v === 0) {
+                    dotScreenEffect.enabled = false;
+                }
+                else {
+                    dotScreenEffect.enabled = true;
+                    dotScreenEffect.uniforms['scale'].value = Math.pow(v / 127, 3) * 4;
+                }
+            }
+        },
+        "/cc/23": {
+            param: function (v) {
+                if (v === 0) {
+                    rgbShiftEffect.enabled = false;
+                }
+                else {
+                    rgbShiftEffect.enabled = true;
+                    rgbShiftEffect.uniforms['amount'].value = v / 127;
+                }
+            }
+        }
     };
     var toggledAnimatable = ON_OFF_MAPPING[message.name];
     var parameterChangedAnimatable = PARAMETER_MAPPING[message.name];

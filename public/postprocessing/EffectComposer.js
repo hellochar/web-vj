@@ -45,8 +45,26 @@ THREE.EffectComposer.prototype = {
 
 	addPass: function ( pass ) {
 
-		this.passes.push( pass );
+		if (this.passes.indexOf(pass) === -1) {
+			var oldLastPass = this.passes[this.passes.length - 1];
+			if (oldLastPass) {
+				oldLastPass.renderToScreen = false;
+			}
+			this.passes.push( pass );
+			pass.renderToScreen = true;
+		}
 
+	},
+
+	removePass: function ( pass ) {
+		var index = this.passes.indexOf(pass);
+		if (index == this.passes.length - 1) {
+			pass.renderToScreen = false;
+			if (index > 0) {
+				this.passes[index - 1].renderToScreen = true;
+			}
+		}
+		this.passes.splice( index, 1 );
 	},
 
 	insertPass: function ( pass, index ) {
@@ -62,15 +80,24 @@ THREE.EffectComposer.prototype = {
 
 		var maskActive = false;
 
-		var pass, i, il = this.passes.length;
+		var enabledPasses = this.passes.filter(function(p) {
+			 return p.enabled;
+		});
+
+		var pass, i, il = enabledPasses.length;
 
 		for ( i = 0; i < il; i ++ ) {
 
-			pass = this.passes[ i ];
+			pass = enabledPasses[ i ];
 
-			if ( !pass.enabled ) continue;
-
-			pass.render( this.renderer, this.writeBuffer, this.readBuffer, delta, maskActive );
+			if (i == il - 1) {
+				var oldRenderToScreen = pass.renderToScreen;
+				pass.renderToScreen = true;
+				pass.render( this.renderer, this.writeBuffer, this.readBuffer, delta, maskActive );
+				pass.renderToScreen = oldRenderToScreen;
+			} else {
+				pass.render( this.renderer, this.writeBuffer, this.readBuffer, delta, maskActive );
+			}
 
 			if ( pass.needsSwap ) {
 

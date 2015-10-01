@@ -21,16 +21,16 @@ const renderer = new THREE.WebGLRenderer({
 renderer.autoClearColor = false;
 
 const composer = new THREE.EffectComposer(renderer);
+
 composer.addPass( new THREE.RenderPass(scene, camera) );
 
-var effect = new THREE.ShaderPass( THREE.DotScreenShader );
-effect.uniforms[ 'scale' ].value = 4;
-composer.addPass( effect );
+var dotScreenEffect = new THREE.ShaderPass( THREE.DotScreenShader );
+dotScreenEffect.uniforms[ 'scale' ].value = 4;
+composer.addPass( dotScreenEffect );
 
-var effect2 = new THREE.ShaderPass( THREE.RGBShiftShader );
-effect2.uniforms[ 'amount' ].value = 0.0015;
-effect2.renderToScreen = true;
-composer.addPass( effect2 );
+var rgbShiftEffect = new THREE.ShaderPass( THREE.RGBShiftShader );
+rgbShiftEffect.uniforms[ 'amount' ].value = 0.0015;
+composer.addPass( rgbShiftEffect );
 
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -62,7 +62,7 @@ const BackgroundOpacity: Effect = new (class {
     );
 
     constructor() {
-        this.blackBackground.position.z = -5000;
+        this.blackBackground.position.z = -3000;
         this.blackBackground.rotation.z = Math.PI / 2;
         scene.add(this.blackBackground);
     }
@@ -323,7 +323,27 @@ socket.on("message", (message: IMessage) => {
         "/cc/43": Rocks,
         "/cc/44": IncomingGrid,
 
-        "/cc/21": BackgroundOpacity
+        "/cc/21": BackgroundOpacity,
+        "/cc/22": { // dotScreenEffect
+            param: (v: number) => {
+                if (v === 0) {
+                    dotScreenEffect.enabled = false;
+                } else {
+                    dotScreenEffect.enabled = true;
+                    dotScreenEffect.uniforms['scale'].value = Math.pow(v / 127, 3) * 4;
+                }
+            }
+        },
+        "/cc/23": { //rgbShiftEffect
+            param: (v: number) => {
+                if (v === 0) {
+                    rgbShiftEffect.enabled = false;
+                } else {
+                    rgbShiftEffect.enabled = true;
+                    rgbShiftEffect.uniforms['amount'].value = v / 127;
+                }
+            }
+        }
     };
     const toggledAnimatable = ON_OFF_MAPPING[message.name];
     const parameterChangedAnimatable = PARAMETER_MAPPING[message.name];
