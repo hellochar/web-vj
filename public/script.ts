@@ -24,6 +24,7 @@ declare module THREE {
     export var EffectComposer: any;
     export var RenderPass: any;
     export var ShaderPass: any;
+    export var BloomPass: any;
     export var DotScreenShader: any;
     export var RGBShiftShader: any;
 }
@@ -41,6 +42,10 @@ var rgbShiftEffect = new THREE.ShaderPass( THREE.RGBShiftShader );
 rgbShiftEffect.uniforms[ 'amount' ].value = 0.0015;
 rgbShiftEffect.enabled = false;
 composer.addPass( rgbShiftEffect );
+
+var filmPassEffect = new THREE.FilmPass(1000.5, 10.125, 2000, false);
+filmPassEffect.enabled = false;
+composer.addPass( filmPassEffect );
 
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -478,6 +483,16 @@ socket.on("message", (message: IMessage) => {
                 } else {
                     rgbShiftEffect.enabled = true;
                     rgbShiftEffect.uniforms['amount'].value = v / 127;
+                }
+            }
+        },
+        "/cc/24": { // filmPassEffect
+            param: (v: number) => {
+                if (v === 0) {
+                    filmPassEffect.enabled = false;
+                } else {
+                    filmPassEffect.enabled = true;
+                    filmPassEffect.uniforms['sIntensity'].value = v / 12.7;
                 }
             }
         }

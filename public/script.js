@@ -27,6 +27,9 @@ var rgbShiftEffect = new THREE.ShaderPass(THREE.RGBShiftShader);
 rgbShiftEffect.uniforms['amount'].value = 0.0015;
 rgbShiftEffect.enabled = false;
 composer.addPass(rgbShiftEffect);
+var filmPassEffect = new THREE.FilmPass(1000.5, 10.125, 2000, false);
+filmPassEffect.enabled = false;
+composer.addPass(filmPassEffect);
 window.addEventListener('resize', onWindowResize, false);
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -379,6 +382,17 @@ socket.on("message", function (message) {
                 else {
                     rgbShiftEffect.enabled = true;
                     rgbShiftEffect.uniforms['amount'].value = v / 127;
+                }
+            }
+        },
+        "/cc/24": {
+            param: function (v) {
+                if (v === 0) {
+                    filmPassEffect.enabled = false;
+                }
+                else {
+                    filmPassEffect.enabled = true;
+                    filmPassEffect.uniforms['sIntensity'].value = v / 12.7;
                 }
             }
         }
