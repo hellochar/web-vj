@@ -16,7 +16,8 @@ THREE.KaleidoShader = {
 
 		"tDiffuse": { type: "t", value: null },
 		"sides":    { type: "f", value: 6.0 },
-		"angle":    { type: "f", value: 0.0 }
+		"angle":    { type: "f", value: 0.0 },
+		"resolution":{type: "v2", value: new THREE.Vector2(0)}
 
 	},
 
@@ -38,12 +39,14 @@ THREE.KaleidoShader = {
 		"uniform sampler2D tDiffuse;",
 		"uniform float sides;",
 		"uniform float angle;",
-		
+		"uniform vec2 resolution;",
+
 		"varying vec2 vUv;",
 
 		"void main() {",
 
 			"vec2 p = vUv - 0.5;",
+			"p.y *= resolution.y / resolution.x;",
 			"float r = length(p);",
 			"float a = atan(p.y, p.x) + angle;",
 			"float tau = 2. * 3.1416 ;",

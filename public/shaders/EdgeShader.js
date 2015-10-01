@@ -13,6 +13,7 @@ THREE.EdgeShader = {
 
 		"tDiffuse": { type: "t", value: null },
 		"aspect":    { type: "v2", value: new THREE.Vector2( 512, 512 ) },
+		"wet": 		{type: "f", value: 0.5 }
 	},
 
 	vertexShader: [
@@ -34,6 +35,7 @@ THREE.EdgeShader = {
 		"varying vec2 vUv;",
 
 		"uniform vec2 aspect;",
+		"uniform float wet;",
 
 		"vec2 texel = vec2(1.0 / aspect.x, 1.0 / aspect.y);",
 
@@ -86,7 +88,9 @@ THREE.EdgeShader = {
 			"float M = (cnv[0] + cnv[1]) + (cnv[2] + cnv[3]);",
 			"float S = (cnv[4] + cnv[5]) + (cnv[6] + cnv[7]) + (cnv[8] + M);",
 
-			"gl_FragColor = vec4(vec3(sqrt(M/S)), 1.0);",
+			"vec4 original = texture2D(tDiffuse, vUv);",
+			"vec4 new = vec4(vec3(sqrt(M/S)), 1.0);",
+			"gl_FragColor = mix(original, new, wet);",
 		"}",
 
 	].join("\n")

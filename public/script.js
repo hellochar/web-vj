@@ -30,6 +30,13 @@ composer.addPass(rgbShiftEffect);
 var filmPassEffect = new THREE.FilmPass(1000.5, 10.125, 2000, false);
 filmPassEffect.enabled = false;
 composer.addPass(filmPassEffect);
+var kaleidoEffect = new THREE.ShaderPass(THREE.KaleidoShader);
+kaleidoEffect.enabled = false;
+kaleidoEffect.uniforms['resolution'].value.set(window.innerWidth, window.innerHeight);
+composer.addPass(kaleidoEffect);
+var edgeEffect = new THREE.ShaderPass(THREE.EdgeShader);
+edgeEffect.enabled = false;
+composer.addPass(edgeEffect);
 window.addEventListener('resize', onWindowResize, false);
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -393,6 +400,28 @@ socket.on("message", function (message) {
                 else {
                     filmPassEffect.enabled = true;
                     filmPassEffect.uniforms['sIntensity'].value = v / 12.7;
+                }
+            }
+        },
+        "/cc/25": {
+            param: function (v) {
+                if (v === 0) {
+                    kaleidoEffect.enabled = false;
+                }
+                else {
+                    kaleidoEffect.enabled = true;
+                    kaleidoEffect.uniforms['sides'].value = Math.floor(1 + (v - 1) / 126 * (24 - 1));
+                }
+            }
+        },
+        "/cc/26": {
+            param: function (v) {
+                if (v === 0) {
+                    edgeEffect.enabled = false;
+                }
+                else {
+                    edgeEffect.enabled = true;
+                    edgeEffect.uniforms['wet'].value = v / 127;
                 }
             }
         }
