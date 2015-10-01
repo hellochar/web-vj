@@ -21,9 +21,11 @@ var composer = new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene, camera));
 var dotScreenEffect = new THREE.ShaderPass(THREE.DotScreenShader);
 dotScreenEffect.uniforms['scale'].value = 4;
+dotScreenEffect.enabled = false;
 composer.addPass(dotScreenEffect);
 var rgbShiftEffect = new THREE.ShaderPass(THREE.RGBShiftShader);
 rgbShiftEffect.uniforms['amount'].value = 0.0015;
+rgbShiftEffect.enabled = false;
 composer.addPass(rgbShiftEffect);
 window.addEventListener('resize', onWindowResize, false);
 function onWindowResize() {
@@ -243,6 +245,102 @@ var IncomingGrid = new ((function () {
     };
     return class_5;
 })());
+var Circles = new ((function () {
+    function class_6() {
+        this.object = new THREE.Object3D();
+        this.delta = 0;
+        this.speed = 1;
+        var extent = 4000;
+        var distance = 150;
+        var geometry = new THREE.SphereGeometry(10, 4, 3);
+        var material = new THREE.MeshLambertMaterial({
+            color: 0xffffff,
+            shading: THREE.FlatShading
+        });
+        for (var x = -extent; x < extent; x += distance) {
+            for (var z = 100; z > 100 - extent; z -= distance) {
+                var sphere = new THREE.Mesh(geometry, material);
+                sphere.position.set(x, -100, z);
+                sphere.rotation.set(Math.random() * 1, Math.random() * 1, Math.random() * 1);
+                this.object.add(sphere);
+            }
+        }
+        scene.add(new THREE.AmbientLight(0x222222));
+        var directionalLight = new THREE.DirectionalLight(0xffffff);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+    }
+    class_6.prototype.param = function (value) {
+        this.speed = value / 20 + 1;
+    };
+    class_6.prototype.show = function () {
+        scene.add(this.object);
+    };
+    class_6.prototype.hide = function () {
+        scene.remove(this.object);
+    };
+    class_6.prototype.animate = function () {
+        var _this = this;
+        this.delta += this.speed;
+        this.object.children.forEach(function (child) {
+            var scale = 1.5 * Math.sin(child.position.z / 900 - _this.delta / 19) + 1.5;
+            child.scale.set(scale, scale, scale);
+        });
+    };
+    return class_6;
+})());
+var Particles = new ((function () {
+    function class_7() {
+        this.extent = 1000;
+        this.object = new THREE.Object3D();
+        this.geometry = new THREE.Geometry();
+        this.starTexture = THREE.ImageUtils.loadTexture("star.png");
+        this.material = new THREE.PointCloudMaterial({
+            color: 0xff3366,
+            map: this.starTexture,
+            sizeAttenuation: true,
+            size: 70,
+            vertexColors: THREE.VertexColors,
+            alphaTest: 0.8,
+            transparent: true
+        });
+        this.speed = 1;
+        for (var i = 0; i < 2000; i++) {
+            this.geometry.vertices.push(new THREE.Vector3((Math.random() * 2 - 1) * this.extent, (Math.random() * 2 - 1) * this.extent, (Math.random() * 2 - 1) * this.extent));
+            this.geometry.colors.push(new THREE.Color().setHSL(i / 2000, 1, 0.8));
+        }
+        var pointCloud = new THREE.PointCloud(this.geometry, this.material);
+        this.object.add(pointCloud);
+        this.object.position.z = -this.extent / 2;
+        this.param(0);
+    }
+    class_7.prototype.param = function (value) {
+        this.speed = Math.exp(value / 127 * 4 + 1) * 1e-4;
+    };
+    class_7.prototype.show = function () {
+        scene.add(this.object);
+    };
+    class_7.prototype.hide = function () {
+        scene.remove(this.object);
+    };
+    class_7.prototype.animate = function () {
+        var _this = this;
+        this.material.color.offsetHSL(0.0001, 0, 0);
+        var center = new THREE.Vector3(0, 0, -1000);
+        var scale = this.speed;
+        this.geometry.vertices.forEach(function (v) {
+            var vx = v.x * scale, vy = v.y * scale, vz = (v.z - 800) * scale;
+            v.x += vx * vx - vy + 3 * vz + 3000 * scale + Math.sin(Date.now() / 3000) * 1000 * scale;
+            v.y += vx / Math.max(vy, 0.1) + vx - 0.03 + vz;
+            v.z += vz - vx * vy + Math.sin(vz * 40) + Math.cos(Date.now() / 2200) * 1000 * scale;
+            if (v.distanceTo(center) > _this.extent) {
+                v.set((Math.random() * 2 - 1) * _this.extent, (Math.random() * 2 - 1) * _this.extent, (Math.random() * 2 - 1) * _this.extent);
+            }
+        });
+        this.geometry.verticesNeedUpdate = true;
+    };
+    return class_7;
+})());
 var noteStates = {};
 socket.on("message", function (message) {
     console.log(message);
@@ -250,13 +348,17 @@ socket.on("message", function (message) {
         "/note/9": PlanetEarth,
         "/note/10": Words,
         "/note/11": Rocks,
-        "/note/12": IncomingGrid
+        "/note/12": IncomingGrid,
+        "/note/25": Circles,
+        "/note/26": Particles,
     };
     var PARAMETER_MAPPING = {
         "/cc/41": PlanetEarth,
         "/cc/42": Words,
         "/cc/43": Rocks,
         "/cc/44": IncomingGrid,
+        "/cc/45": Circles,
+        "/cc/46": Particles,
         "/cc/21": BackgroundOpacity,
         "/cc/22": {
             param: function (v) {
@@ -300,7 +402,9 @@ var animatables = [
     PlanetEarth,
     Words,
     Rocks,
-    IncomingGrid
+    IncomingGrid,
+    Circles,
+    Particles
 ];
 var effects = [
     BackgroundOpacity
