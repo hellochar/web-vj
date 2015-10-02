@@ -13,6 +13,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, canvas.width() / canvas.height(), 1, 10000);
 camera.position.set(0, 0, 100);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
+scene.add(camera);
 const renderer = new THREE.WebGLRenderer({
     canvas: <HTMLCanvasElement> canvas[0],
     preserveDrawingBuffer: true,
@@ -88,18 +89,18 @@ const BackgroundOpacity: Effect = new (class {
     constructor() {
         this.blackBackground.position.z = -3000;
         this.blackBackground.rotation.z = Math.PI / 2;
-        scene.add(this.blackBackground);
+        camera.add(this.blackBackground);
     }
 
     param(v: number) {
-        this.blackBackground.material.opacity = Math.pow(v / 127, 4);
+        this.blackBackground.material.opacity = Math.pow(1 - v / 127, 4);
     }
 });
 
 const Words: Animatable = new (class {
     public words = [
         "abstract not concrete",
-        "aesthetic having with the appreciation beauty",
+        "aesthetic having with the appreciation beauty _stringtheory_ string_theory string.theory",
         "alleviate ease pain burden",
         "ambivalent simultaneously feeling opposing feelings uncertain",
         "apathetic feeling showing little emotion",
@@ -186,7 +187,7 @@ const Words: Animatable = new (class {
     }
 });
 
-function tween(v: THREE.Vector3, to: THREE.Vector3, millis: number, then?: Function) {
+function tween(v: THREE.Vector3, to: THREE.Vector3, millis: number, then?: Function, onUpdate?: Function) {
     const start = v.clone();
     let startTime: number;
     function update(timestamp) {
@@ -197,6 +198,9 @@ function tween(v: THREE.Vector3, to: THREE.Vector3, millis: number, then?: Funct
 
         v.copy(start);
         v.lerp(to, lerpedValue);
+        if (onUpdate) {
+            onUpdate();
+        }
 
         if (timeDelta < millis) {
             requestAnimationFrame(update);
@@ -218,17 +222,23 @@ const PlanetEarth: Animatable = new (class {
     constructor() {
         this.video.volume = 0;
         this.video.onplay = () => {
-            this.video.currentTime = 3*60 + 43;
+            this.video.currentTime = 38;
             this.texture = new THREE.Texture(this.video);
             this.mesh = new THREE.Mesh(
                 new THREE.SphereGeometry(50, 12, 12),
                 new THREE.MeshBasicMaterial({map: this.texture})
             );
         };
+        this.video.ontimeupdate = () => {
+            if (this.video.currentTime > 13*60 + 24) {
+                this.video.currentTime = 38;
+                this.video.play();
+            }
+        };
     }
 
     public param(value: number) {
-        this.video.playbackRate = Math.pow(5, 2*(value / 127 - 0.5));
+        this.video.playbackRate = Math.pow(125, value / 127);
     }
 
     public show() {
@@ -245,7 +255,7 @@ const PlanetEarth: Animatable = new (class {
 
     public animate() {
         if (this.texture && this.mesh) {
-            this.mesh.rotation.y += 0.002 * this.video.playbackRate;
+            this.mesh.rotation.y += 0.0002 * this.video.playbackRate;
             this.texture.needsUpdate = true;
         }
 
@@ -378,7 +388,7 @@ const Circles: Animatable = new (class {
 });
 
 const Particles: Animatable = new (class {
-    private extent = 1000;
+    private extent = 2000;
 
     public object = new THREE.Object3D();
     public geometry = new THREE.Geometry();
@@ -417,6 +427,8 @@ const Particles: Animatable = new (class {
 
     show() {
         scene.add(this.object);
+        this.object.scale.set(0,0,0);
+        tween(this.object.scale, new THREE.Vector3(1, 1, 1), 1000);
     }
 
     hide() {
@@ -537,6 +549,41 @@ socket.on("message", (message: IMessage) => {
         }
     } else if (parameterChangedAnimatable) {
         parameterChangedAnimatable.param(message.value);
+    }
+
+    const AMOUNT = 80;
+
+    if (message.name === "/cc/116" && message.value == 127) {
+        // left
+        const newPosition = camera.position.clone();
+        newPosition.x -= AMOUNT;
+        tween(camera.position, newPosition, 200, null, () => {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/117" && message.value == 127) {
+        // left
+        const newPosition = camera.position.clone();
+        newPosition.x += AMOUNT;
+        tween(camera.position, newPosition, 200, null, () => {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/114" && message.value == 127) {
+        // left
+        const newPosition = camera.position.clone();
+        newPosition.y += AMOUNT;
+        tween(camera.position, newPosition, 200, null, () => {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/115" && message.value == 127) {
+        // left
+        const newPosition = camera.position.clone();
+        newPosition.y -= AMOUNT;
+        tween(camera.position, newPosition, 200, null, () => {
+            camera.lookAt(new THREE.Vector3());
+        });
     }
 });
 

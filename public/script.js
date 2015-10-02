@@ -11,6 +11,7 @@ var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(60, canvas.width() / canvas.height(), 1, 10000);
 camera.position.set(0, 0, 100);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
+scene.add(camera);
 var renderer = new THREE.WebGLRenderer({
     canvas: canvas[0],
     preserveDrawingBuffer: true,
@@ -48,10 +49,10 @@ var BackgroundOpacity = new ((function () {
         this.blackBackground = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, 10000), new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 1, transparent: true }));
         this.blackBackground.position.z = -3000;
         this.blackBackground.rotation.z = Math.PI / 2;
-        scene.add(this.blackBackground);
+        camera.add(this.blackBackground);
     }
     class_1.prototype.param = function (v) {
-        this.blackBackground.material.opacity = Math.pow(v / 127, 4);
+        this.blackBackground.material.opacity = Math.pow(1 - v / 127, 4);
     };
     return class_1;
 })());
@@ -59,7 +60,7 @@ var Words = new ((function () {
     function class_2() {
         this.words = [
             "abstract not concrete",
-            "aesthetic having with the appreciation beauty",
+            "aesthetic having with the appreciation beauty _stringtheory_ string_theory string.theory",
             "alleviate ease pain burden",
             "ambivalent simultaneously feeling opposing feelings uncertain",
             "apathetic feeling showing little emotion",
@@ -138,7 +139,7 @@ var Words = new ((function () {
     };
     return class_2;
 })());
-function tween(v, to, millis, then) {
+function tween(v, to, millis, then, onUpdate) {
     var start = v.clone();
     var startTime;
     function update(timestamp) {
@@ -150,6 +151,9 @@ function tween(v, to, millis, then) {
         var lerpedValue = Math.pow(timeDelta / millis, 1 / 4);
         v.copy(start);
         v.lerp(to, lerpedValue);
+        if (onUpdate) {
+            onUpdate();
+        }
         if (timeDelta < millis) {
             requestAnimationFrame(update);
         }
@@ -167,13 +171,19 @@ var PlanetEarth = new ((function () {
         this.video = $("<video autoplay src='planetearth.mp4'></video>")[0];
         this.video.volume = 0;
         this.video.onplay = function () {
-            _this.video.currentTime = 3 * 60 + 43;
+            _this.video.currentTime = 38;
             _this.texture = new THREE.Texture(_this.video);
             _this.mesh = new THREE.Mesh(new THREE.SphereGeometry(50, 12, 12), new THREE.MeshBasicMaterial({ map: _this.texture }));
         };
+        this.video.ontimeupdate = function () {
+            if (_this.video.currentTime > 13 * 60 + 24) {
+                _this.video.currentTime = 38;
+                _this.video.play();
+            }
+        };
     }
     class_3.prototype.param = function (value) {
-        this.video.playbackRate = Math.pow(5, 2 * (value / 127 - 0.5));
+        this.video.playbackRate = Math.pow(125, value / 127);
     };
     class_3.prototype.show = function () {
         scene.add(this.mesh);
@@ -188,7 +198,7 @@ var PlanetEarth = new ((function () {
     };
     class_3.prototype.animate = function () {
         if (this.texture && this.mesh) {
-            this.mesh.rotation.y += 0.002 * this.video.playbackRate;
+            this.mesh.rotation.y += 0.0002 * this.video.playbackRate;
             this.texture.needsUpdate = true;
         }
     };
@@ -301,7 +311,7 @@ var Circles = new ((function () {
 })());
 var Particles = new ((function () {
     function class_7() {
-        this.extent = 1000;
+        this.extent = 2000;
         this.object = new THREE.Object3D();
         this.geometry = new THREE.Geometry();
         this.starTexture = THREE.ImageUtils.loadTexture("star.png");
@@ -329,6 +339,8 @@ var Particles = new ((function () {
     };
     class_7.prototype.show = function () {
         scene.add(this.object);
+        this.object.scale.set(0, 0, 0);
+        tween(this.object.scale, new THREE.Vector3(1, 1, 1), 1000);
     };
     class_7.prototype.hide = function () {
         scene.remove(this.object);
@@ -439,6 +451,35 @@ socket.on("message", function (message) {
     }
     else if (parameterChangedAnimatable) {
         parameterChangedAnimatable.param(message.value);
+    }
+    var AMOUNT = 80;
+    if (message.name === "/cc/116" && message.value == 127) {
+        var newPosition = camera.position.clone();
+        newPosition.x -= AMOUNT;
+        tween(camera.position, newPosition, 200, null, function () {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/117" && message.value == 127) {
+        var newPosition = camera.position.clone();
+        newPosition.x += AMOUNT;
+        tween(camera.position, newPosition, 200, null, function () {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/114" && message.value == 127) {
+        var newPosition = camera.position.clone();
+        newPosition.y += AMOUNT;
+        tween(camera.position, newPosition, 200, null, function () {
+            camera.lookAt(new THREE.Vector3());
+        });
+    }
+    if (message.name === "/cc/115" && message.value == 127) {
+        var newPosition = camera.position.clone();
+        newPosition.y -= AMOUNT;
+        tween(camera.position, newPosition, 200, null, function () {
+            camera.lookAt(new THREE.Vector3());
+        });
     }
 });
 var animatables = [
