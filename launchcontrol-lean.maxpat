@@ -38,7 +38,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 304.0, 463.0, 150.0, 75.0 ],
-					"text" : "/note : [26, 0],\n/midiinName : \"/note\",\n/wrapperLabel : \"/wrapName/note/26\",\n/input : [\"/note/26\", 0]",
+					"text" : "/cc : [116, 0],\n/midiinName : \"/cc\",\n/wrapperLabel : \"/wrapName/cc/116\",\n/input : [\"/cc/116\", 0]",
 					"textcolor" : [ 0.0, 0.0, 0.0, 1.0 ]
 				}
 
@@ -61,27 +61,13 @@
 				"box" : 				{
 					"fontname" : "Arial",
 					"fontsize" : 12.0,
-					"id" : "obj-12",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 7,
-					"outlettype" : [ "", "", "", "int", "int", "int", "int" ],
-					"patching_rect" : [ 156.0, 169.0, 100.0, 20.0 ],
-					"text" : "midiparse"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"fontname" : "Arial",
-					"fontsize" : 12.0,
 					"id" : "obj-11",
 					"maxclass" : "o.message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 358.0, 292.0, 150.0, 20.0 ],
-					"text" : "/input : [\"/note/26\", 0]",
+					"text" : "/input : [\"/cc/116\", 0]",
 					"textcolor" : [ 0.0, 0.0, 0.0, 1.0 ]
 				}
 
@@ -133,7 +119,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
-					"patching_rect" : [ 81.620552, 124.550293, 42.0, 20.0 ],
+					"patching_rect" : [ 81.620552, 111.550293, 42.0, 20.0 ],
 					"text" : "midiin"
 				}
 
@@ -209,15 +195,6 @@
 					"disabled" : 0,
 					"hidden" : 0,
 					"source" : [ "obj-32", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-12", 0 ],
-					"disabled" : 0,
-					"hidden" : 0,
-					"source" : [ "obj-4", 0 ]
 				}
 
 			}
